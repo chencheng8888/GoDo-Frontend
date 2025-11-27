@@ -1,0 +1,5 @@
+{
+  "name": "GoDo Scheduler",
+  "description": "A modern, responsive dashboard for the GoDo Task Scheduling System. Manage shell tasks, schedule cron jobs, and handle script files efficiently.",
+  "requestFramePermissions": []
+}
