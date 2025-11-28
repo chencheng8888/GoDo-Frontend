@@ -31,10 +31,11 @@ export const FileView: React.FC = () => {
     if (!file) return;
 
     // Simple validation (e.g. max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        alert("File too large (Max 5MB)");
-        return;
-    }
+    if (file.size > 50 * 1024 * 1024) {
+		alert('File too large (Max 5MB)');
+		e.target.value = ''; // 立即重置
+		return;
+	}
 
     setUploading(true);
     try {
