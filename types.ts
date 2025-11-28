@@ -44,7 +44,6 @@ export interface AddShellTaskResponseData {
 
 export interface DeleteTaskRequest {
   task_id: string;
-  user_name: string;
 }
 
 export interface ListFilesResponseData {
