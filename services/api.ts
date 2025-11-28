@@ -16,7 +16,8 @@ import {
 
 // Assuming the backend is running locally on port 8080 as per swagger
 // In a real production build, this would likely be an environment variable
-const BASE_URL = 'http://localhost:8080/api/v1';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+
 
 class ApiService {
 	private token: string | null = null;
