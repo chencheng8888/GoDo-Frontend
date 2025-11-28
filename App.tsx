@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { api } from './services/api';
 import { ViewState, UserSession } from './types';
 import { Layout } from './components/Layout';
 import { TaskView } from './components/TaskView';
 import { FileView } from './components/FileView';
+import { LogView } from './components/LogView';
 import { Button } from './components/ui/Button';
 import { Input } from './components/ui/Input';
 import { Lock, User } from 'lucide-react';
@@ -139,8 +141,10 @@ const App: React.FC = () => {
     >
       {currentView === 'tasks' ? (
         <TaskView username={session.username} />
-      ) : (
+      ) : currentView === 'files' ? (
         <FileView />
+      ) : (
+        <LogView username={session.username} />
       )}
     </Layout>
   );

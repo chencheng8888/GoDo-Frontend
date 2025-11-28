@@ -1,3 +1,4 @@
+
 import {
   APIResponse,
   LoginRequest,
@@ -8,7 +9,9 @@ import {
   DeleteTaskRequest,
   ListFilesResponseData,
   DeleteFileRequest,
-  UploadScriptResponseData
+  UploadScriptResponseData,
+  GetTaskLogsRequest,
+  ListTaskLogResponseData
 } from '../types';
 
 // Assuming the backend is running locally on port 8080 as per swagger
@@ -93,6 +96,20 @@ class ApiService {
     return this.request<void>('/tasks/delete', {
       method: 'DELETE',
       body: JSON.stringify(data),
+    });
+  }
+
+  async getTaskLogs(params: GetTaskLogsRequest): Promise<ListTaskLogResponseData> {
+    const query = new URLSearchParams({
+      page: params.page.toString(),
+      page_size: params.page_size.toString(),
+    });
+    if (params.user_name) {
+      query.append('user_name', params.user_name);
+    }
+
+    return this.request<ListTaskLogResponseData>(`/tasks/logs?${query.toString()}`, {
+      method: 'GET',
     });
   }
 

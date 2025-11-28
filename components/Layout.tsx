@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Terminal, FolderOpen, LogOut, Menu } from 'lucide-react';
+import { Terminal, FolderOpen, LogOut, Menu, ClipboardList } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface LayoutProps {
@@ -22,6 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const navItems = [
     { id: 'tasks', label: 'Tasks', icon: Terminal },
     { id: 'files', label: 'File Manager', icon: FolderOpen },
+    { id: 'logs', label: 'Execution Logs', icon: ClipboardList },
   ];
 
   return (
