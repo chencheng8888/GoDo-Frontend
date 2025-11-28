@@ -26,7 +26,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
     args: [],
     scheduled_time: '0 * * * * *', // Default cron
     timeout: 300,
-    use_shell: true
+    use_shell: false
   });
   const [argInput, setArgInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -243,6 +243,12 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 							<div>
 								<Input label="Cron Schedule (Seconds Minutes Hours Day Month Week)" value={newTask.scheduled_time} onChange={e => setNewTask({ ...newTask, scheduled_time: e.target.value })} required placeholder="0 30 2 * * *" />
 								<p className="text-xs text-slate-500 mt-1">Example: "0 0 12 * * *" (Every day at 12:00:00)</p>
+							</div>
+							<div className="flex items-center space-x-2 pt-2">
+								<input type="checkbox" id="useShell" checked={newTask.use_shell} onChange={e => setNewTask({ ...newTask, use_shell: e.target.checked })} />
+								<label htmlFor="useShell" className="text-sm text-slate-700">
+									Use Shell
+								</label>
 							</div>
 
 							<div className="flex justify-end space-x-3 mt-6">
