@@ -1,56 +1,61 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Clock, Play, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Clock, Play, AlertCircle, RefreshCw, Key } from 'lucide-react';
 import { TaskResponse, AddShellTaskRequest } from '../types';
 import { api } from '../services/api';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { renderJobDetails } from './showJobContent';
+import CustomModal from './CustomModalProps';
+
+import { Tabs } from 'antd';
+import type { TabsProps } from 'antd';
+
+
+import { Row, Col } from 'antd';
 
 interface TaskViewProps {
-  username: string;
+	username: string;
 }
 
-
-
 export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
-  const [tasks, setTasks] = useState<TaskResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Form State
-  const [newTask, setNewTask] = useState<Partial<AddShellTaskRequest>>({
-    task_name: '',
-    description: '',
-    command: '',
-    args: [],
-    scheduled_time: '0 * * * * *', // Default cron
-    timeout: 300,
-    use_shell: false
-  });
-  const [argInput, setArgInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+	const [tasks, setTasks] = useState<TaskResponse[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState('');
+	const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchTasks = async () => {
-    setLoading(true);
-    try {
-      const res = await api.listTasks();
-      setTasks(res.tasks || []); // Handle potential null
-      setError('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch tasks');
-    } finally {
-      setLoading(false);
-    }
-  };
+	// Form State
+	const [newTask, setNewTask] = useState<Partial<AddShellTaskRequest>>({
+		task_name: '',
+		description: '',
+		command: '',
+		args: [],
+		scheduled_time: '0 * * * * *', // Default cron
+		timeout: 300,
+		use_shell: false,
+	});
+	const [argInput, setArgInput] = useState('');
+	const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const [runningTasks, setRunningTasks] = useState<Record<string, boolean>>({});
+	const fetchTasks = async () => {
+		setLoading(true);
+		try {
+			const res = await api.listTasks();
+			setTasks(res.tasks || []); // Handle potential null
+			setError('');
+		} catch (err: any) {
+			setError(err.message || 'Failed to fetch tasks');
+		} finally {
+			setLoading(false);
+		}
+	};
 
-  const handleRun = async (taskId: string) => {
+	useEffect(() => {
+		fetchTasks();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+	const [runningTasks, setRunningTasks] = useState<Record<string, boolean>>({});
+
+	const handleRun = async (taskId: string) => {
 		setRunningTasks(prev => ({ ...prev, [taskId]: true }));
 		try {
 			await api.runTask({ task_id: taskId });
@@ -62,94 +67,137 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 			// 恢复状态
 			setRunningTasks(prev => ({ ...prev, [taskId]: false }));
 		}
-  };
+	};
 
-  const handleDelete = async (taskId: string) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
-    try {
-      await api.deleteTask({ task_id: taskId});
-      fetchTasks();
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
+	const handleDelete = async (taskId: string) => {
+		try {
+			await api.deleteTask({ task_id: taskId });
+			fetchTasks();
+		} catch (err: any) {
+			alert(err.message);
+		}
+	};
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await api.addTask({
-        ...newTask as AddShellTaskRequest,
-        args: argInput.length > 0 ? argInput.split(' ') : []
-      });
-      setIsModalOpen(false);
-      setNewTask({
-        task_name: '',
-        description: '',
-        command: '',
-        args: [],
-        scheduled_time: '0 * * * * *',
-        timeout: 300,
-        use_shell: true
-      });
-      setArgInput('');
-      fetchTasks();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+	const handleCreateSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setSubmitting(true);
+		try {
+			await api.addTask({
+				...(newTask as AddShellTaskRequest),
+				args: argInput.length > 0 ? argInput.split(' ') : [],
+			});
+			setIsModalOpen(false);
+			setNewTask({
+				task_name: '',
+				description: '',
+				command: '',
+				args: [],
+				scheduled_time: '0 * * * * *',
+				timeout: 300,
+				use_shell: true,
+			});
+			setArgInput('');
+			fetchTasks();
+		} catch (err: any) {
+			alert(err.message);
+		} finally {
+			setSubmitting(false);
+		}
+	};
 
-//   const renderJobDetails = (jobStr: string) => {
-//     let parsed: Record<string, any>;
-//     try {
-//       parsed = JSON.parse(jobStr);
-//     } catch (e) {
-//       return <div className="text-xs text-slate-500 font-mono bg-slate-50 p-2 rounded break-all">{jobStr}</div>;
-//     }
+	const createShellTaskTab = () => {
+		return (
+			<form onSubmit={handleCreateSubmit} className="space-y-4">
+				<Input label="Task Name" value={newTask.task_name} onChange={e => setNewTask({ ...newTask, task_name: e.target.value })} required placeholder="e.g., daily-db-backup" />
+				<Input label="Description" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} required placeholder="Brief description of the task" />
+				<div className="grid grid-cols-2 gap-4">
+					<Input label="Command / Script" value={newTask.command} onChange={e => setNewTask({ ...newTask, command: e.target.value })} required placeholder="./script.sh" />
+					<Input label="Timeout (seconds)" type="number" value={newTask.timeout} onChange={e => setNewTask({ ...newTask, timeout: parseInt(e.target.value) })} required max={7200} />
+				</div>
+				<Input label="Arguments (space separated)" value={argInput} onChange={e => setArgInput(e.target.value)} placeholder="--force --verbose" />
+				<div>
+					<Input label="Cron Schedule (Seconds Minutes Hours Day Month Week)" value={newTask.scheduled_time} onChange={e => setNewTask({ ...newTask, scheduled_time: e.target.value })} required placeholder="0 30 2 * * *" />
+					<p className="text-xs text-slate-500 mt-1">Example: "0 0 12 * * *" (Every day at 12:00:00)</p>
+				</div>
+				<div className="flex items-center space-x-2 pt-2">
+					<input type="checkbox" id="useShell" checked={newTask.use_shell} onChange={e => setNewTask({ ...newTask, use_shell: e.target.checked })} />
+					<label htmlFor="useShell" className="text-sm text-slate-700">
+						Use Shell
+					</label>
+				</div>
 
-//     if (!parsed || typeof parsed !== 'object') {
-//        return <div className="text-xs text-slate-500 font-mono bg-slate-50 p-2 rounded break-all">{String(parsed)}</div>;
-//     }
+				<div className="flex justify-end space-x-3 mt-6">
+					<Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+						Cancel
+					</Button>
+					<Button type="submit" isLoading={submitting}>
+						Create Task
+					</Button>
+				</div>
+			</form>
+		);
+	};
+	const createTaskTab: TabsProps['item'] = [
+		{
+			key: 'shell',
+			label: 'Shell Task',
+			children: createShellTaskTab(),
+		},
+	];
 
-//     return (
-//       <div className="bg-slate-50 rounded border border-slate-200 overflow-hidden text-xs w-full">
-//         {Object.entries(parsed).map(([key, value], index) => (
-//           <div 
-//             key={key} 
-//             className={`flex ${
-//               index !== Object.keys(parsed).length - 1 ? 'border-b border-slate-200' : ''
-//             }`}
-//           >
-//             <div className="bg-slate-100 w-24 shrink-0 px-3 py-2 font-medium text-slate-500 border-r border-slate-200 truncate" title={key}>
-//               {key}
-//             </div>
-//             <div className="px-3 py-2 font-mono text-slate-700 break-all min-w-0 flex-1">
-//               {Array.isArray(value) ? (
-//                  <span>
-//                     <span className="text-slate-400 opacity-50">[</span>
-//                     {value.map((v, i) => (
-//                         <span key={i}>
-//                             {i > 0 && <span className="text-slate-400 mr-1">,</span>}
-//                             <span className="text-blue-600">"{v}"</span>
-//                         </span>
-//                     ))}
-//                     <span className="text-slate-400 opacity-50">]</span>
-//                  </span>
-//               ) : typeof value === 'boolean' ? (
-//                 <span className={value ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{String(value)}</span>
-//               ) : (
-//                 <span>{String(value)}</span>
-//               )}
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     );
-//   };
+	const TaskList = ({ tasks, handleRun, runningTasks, handleDelete, renderJobDetails }) => {
+		return (
+			<Row gutter={[16, 16]} justify="start">
+				{tasks.map(task => (
+					<Col key={task.id} span={8}>
+						<div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md p-6 flex flex-col">
+							<div className="flex justify-between items-start mb-4">
+								<div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">{task.job_type}</div>
+								<div className="flex space-x-1">
+									<button onClick={() => handleRun(task.id)} className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Run Task">
+										{runningTasks[task.id] ? <RefreshCw size={18} className="animate-spin" /> : <Play size={18} />}
+									</button>
+									<CustomModal
+										title="Are you sure you want to delete this task?"
+										trigger={
+											<button className="text-slate-400 hover:text-red-600 transition-colors p-1" title="Delete">
+												<Trash2 size={18} />
+											</button>
+										}
+										okText="Yes"
+										cancelText="No"
+										onOk={() => handleDelete(task.id)}
+										onCancel={() => {}}
+									></CustomModal>
+								</div>
+							</div>
 
-  return (
+							<h3 className="text-lg font-bold text-slate-900 mb-1 break-all">{task.task_name}</h3>
+							<p className="text-slate-500 text-sm mb-4 line-clamp-2 min-h-[40px]">{task.description || 'No description provided'}</p>
+
+							<div className="mt-auto space-y-4 pt-4 border-t border-slate-100">
+								<div className="flex items-center text-sm text-slate-600">
+									<Clock className="mr-2 h-4 w-4 text-slate-400 shrink-0" />
+									<span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-xs truncate w-full" title={task.scheduled_time}>
+										{task.scheduled_time}
+									</span>
+								</div>
+								<div className="w-full">
+									<div className="flex items-center text-xs text-slate-500 mb-2">
+										<Play className="mr-1 h-3 w-3" />
+										<span className="font-semibold">Job Configuration</span>
+									</div>
+									{renderJobDetails(task.job)}
+								</div>
+							</div>
+						</div>
+					</Col>
+				))}
+			</Row>
+		);
+	};
+
+	return (
 		<div>
 			<div className="flex justify-between items-center mb-8">
 				<div>
@@ -187,43 +235,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 					<p className="text-slate-500 mt-1">Get started by creating a new shell task.</p>
 				</div>
 			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{tasks.map(task => (
-						<div key={task.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col h-full">
-							<div className="flex justify-between items-start mb-4">
-								<div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">{task.job_type}</div>
-								<div className="flex space-x-1">
-									<button onClick={() => handleRun(task.id)} className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Run Task">
-										{runningTasks[task.id] ? <RefreshCw size={18} className="animate-spin" /> : <Play size={18} />}
-									</button>
-
-									<button onClick={() => handleDelete(task.id)} className="text-slate-400 hover:text-red-600 transition-colors p-1" title="Delete">
-										<Trash2 size={18} />
-									</button>
-								</div>
-							</div>
-
-							<h3 className="text-lg font-bold text-slate-900 mb-1 break-all">{task.task_name}</h3>
-							<p className="text-slate-500 text-sm mb-4 line-clamp-2 min-h-[40px]">{task.description || 'No description provided'}</p>
-
-							<div className="mt-auto space-y-4 pt-4 border-t border-slate-100">
-								<div className="flex items-center text-sm text-slate-600">
-									<Clock className="mr-2 h-4 w-4 text-slate-400 shrink-0" />
-									<span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-xs truncate w-full" title={task.scheduled_time}>
-										{task.scheduled_time}
-									</span>
-								</div>
-								<div className="w-full">
-									<div className="flex items-center text-xs text-slate-500 mb-2">
-										<Play className="mr-1 h-3 w-3" />
-										<span className="font-semibold">Job Configuration</span>
-									</div>
-									{renderJobDetails(task.job)}
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
+				TaskList({ tasks, handleRun, runningTasks, handleDelete, renderJobDetails })
 			)}
 
 			{/* Create Task Modal */}
@@ -231,38 +243,10 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 					<div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
 					<div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg z-10 p-6 animate-fade-in-up max-h-[90vh] overflow-y-auto">
-						<h2 className="text-xl font-bold text-slate-900 mb-4">Create New Task</h2>
-						<form onSubmit={handleCreateSubmit} className="space-y-4">
-							<Input label="Task Name" value={newTask.task_name} onChange={e => setNewTask({ ...newTask, task_name: e.target.value })} required placeholder="e.g., daily-db-backup" />
-							<Input label="Description" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} required placeholder="Brief description of the task" />
-							<div className="grid grid-cols-2 gap-4">
-								<Input label="Command / Script" value={newTask.command} onChange={e => setNewTask({ ...newTask, command: e.target.value })} required placeholder="./script.sh" />
-								<Input label="Timeout (seconds)" type="number" value={newTask.timeout} onChange={e => setNewTask({ ...newTask, timeout: parseInt(e.target.value) })} required max={7200} />
-							</div>
-							<Input label="Arguments (space separated)" value={argInput} onChange={e => setArgInput(e.target.value)} placeholder="--force --verbose" />
-							<div>
-								<Input label="Cron Schedule (Seconds Minutes Hours Day Month Week)" value={newTask.scheduled_time} onChange={e => setNewTask({ ...newTask, scheduled_time: e.target.value })} required placeholder="0 30 2 * * *" />
-								<p className="text-xs text-slate-500 mt-1">Example: "0 0 12 * * *" (Every day at 12:00:00)</p>
-							</div>
-							<div className="flex items-center space-x-2 pt-2">
-								<input type="checkbox" id="useShell" checked={newTask.use_shell} onChange={e => setNewTask({ ...newTask, use_shell: e.target.checked })} />
-								<label htmlFor="useShell" className="text-sm text-slate-700">
-									Use Shell
-								</label>
-							</div>
-
-							<div className="flex justify-end space-x-3 mt-6">
-								<Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
-									Cancel
-								</Button>
-								<Button type="submit" isLoading={submitting}>
-									Create Task
-								</Button>
-							</div>
-						</form>
+						<Tabs defaultActiveKey="shell" items={createTaskTab} />
 					</div>
 				</div>
 			)}
 		</div>
-  );
+	);
 };

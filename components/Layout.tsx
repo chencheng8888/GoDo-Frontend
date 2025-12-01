@@ -1,132 +1,153 @@
-
-import React from 'react';
-import { Terminal, FolderOpen, LogOut, Menu, ClipboardList } from 'lucide-react';
+import React, { useState } from 'react';
+import { Terminal, FolderOpen, LogOut, ClipboardList } from 'lucide-react';
+import type { MenuProps } from 'antd';
+import { Layout, Menu, theme, Button } from 'antd';
 import { ViewState } from '../types';
 
+const { Header, Content, Sider } = Layout;
+
+type MenuItem = Required<MenuProps>['items'][number];
+
 interface LayoutProps {
-  children: React.ReactNode;
-  currentView: ViewState;
-  username: string;
-  onViewChange: (view: ViewState) => void;
-  onLogout: () => void;
+	children: React.ReactNode;
+	currentView: ViewState;
+	username: string;
+	onViewChange: (view: ViewState) => void;
+	onLogout: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  currentView, 
-  username,
-  onViewChange, 
-  onLogout 
-}) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+const siderItems: MenuProps['items'] = [
+	{ key: 'tasks', icon: <Terminal size={16} />, label: 'Tasks' },
+	{ key: 'files', icon: <FolderOpen size={16} />, label: 'File Manager' },
+	{ key: 'logs', icon: <ClipboardList size={16} />, label: 'Execution Logs' },
+];
 
-  const navItems = [
-    { id: 'tasks', label: 'Tasks', icon: Terminal },
-    { id: 'files', label: 'File Manager', icon: FolderOpen },
-    { id: 'logs', label: 'Execution Logs', icon: ClipboardList },
-  ];
+export const AppLayout: React.FC<LayoutProps> = ({ children, currentView, username, onViewChange, onLogout }) => {
+	const [collapsed, setCollapsed] = useState(false);
+	const {
+		token: { colorBgContainer, borderRadiusLG },
+	} = theme.useToken();
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex w-64 flex-col bg-slate-900 text-white fixed h-full inset-y-0 z-10">
-        <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center font-bold text-white text-xl">
-              G
-            </div>
-            <span className="text-xl font-bold tracking-tight">GoDo Scheduler</span>
-          </div>
-        </div>
+	const handleMenuClick: MenuProps['onClick'] = e => {
+		onViewChange(e.key as ViewState);
+	};
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onViewChange(item.id as ViewState)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/20' 
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+	const menuItems: MenuItem[] = siderItems.map(item => ({
+		...item,
+		onClick: handleMenuClick,
+	}));
 
-        <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center justify-between px-2 mb-4">
-            <div className="flex flex-col">
-              <span className="text-xs text-slate-500 uppercase font-semibold">Logged in as</span>
-              <span className="text-sm font-medium text-slate-200 truncate max-w-[120px]">{username}</span>
-            </div>
-          </div>
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-red-600 hover:text-white transition-colors text-sm"
-          >
-            <LogOut size={16} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
+	// Sider Footer 组件
+	const SiderFooter: React.FC<{ collapsed: boolean; username: string; onLogout: () => void }> = ({ collapsed, username, onLogout }) => (
+		<div
+			style={{
+				padding: collapsed ? '16px 8px' : '16px',
+				borderTop: '1px solid #1f1f1f',
+				color: 'white',
+				textAlign: collapsed ? 'center' : 'left',
+				// Flex 子项属性：禁止压缩
+				flexShrink: 0,
+			}}
+		>
+			{collapsed ? (
+				<Button onClick={onLogout} icon={<LogOut size={16} />} type="text" style={{ color: 'rgba(255, 255, 255, 0.65)', padding: 0 }} title={`Logged in as: ${username} - Sign Out`} />
+			) : (
+				<>
+					<div style={{ marginBottom: '12px' }}>
+						<div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '600', lineHeight: 1.5 }}>LOGGED IN AS</div>
+						<div style={{ fontSize: '14px', fontWeight: '500', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.5 }}>{username}</div>
+					</div>
+					<Button
+						onClick={onLogout}
+						type="default"
+						block
+						icon={<LogOut size={16} />}
+						style={{
+							backgroundColor: '#1e293b',
+							borderColor: '#1e293b',
+							color: '#cbd5e1',
+						}}
+						onMouseEnter={e => {
+							e.currentTarget.style.backgroundColor = 'red';
+							e.currentTarget.style.borderColor = 'red';
+							e.currentTarget.style.color = 'white'; // 按钮文字通常要变亮，否则看不清
+						}}
+						onMouseLeave={e => {
+							e.currentTarget.style.backgroundColor = '#1e293b';
+							e.currentTarget.style.borderColor = '#1e293b';
+							e.currentTarget.style.color = '#cbd5e1';
+						}}
+					>
+						Sign Out
+					</Button>
+				</>
+			)}
+		</div>
+	);
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 w-full bg-slate-900 text-white z-20 px-4 py-3 flex items-center justify-between shadow-md">
-        <span className="font-bold text-lg">GoDo</span>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2">
-          <Menu />
-        </button>
-      </div>
+	return (
+		<Layout style={{ minHeight: '100vh' }}>
+			<Sider
+				collapsible
+				collapsed={collapsed}
+				onCollapse={setCollapsed}
+				width={224}
+				theme="dark"
+				style={{
+					height: '100vh',
+					position: 'fixed',
+					left: 0,
+					top: 0,
+					bottom: 0,
+					zIndex: 10,
+					// 注意：这里去掉了 display: flex，因为 Sider 内部会自动生成 wrapper
+				}}
+			>
+				{/* 🔥 关键修复 🔥 
+                    我们在 Sider 内部手动创建一个 Flex 容器，让它占满高度。
+                    这样不管 Antd 内部怎么包裹，我们都能控制内容的分布。
+                */}
+				<div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+					{/* 1. 顶部 Logo - 固定高度 (flexShrink: 0) */}
+					<div
+						style={{
+							padding: '24px 20px',
+							borderBottom: '1px solid #1f1f1f',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: collapsed ? 'center' : 'flex-start',
+							gap: '8px',
+							flexShrink: 0,
+						}}
+					>
+						<div style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '20px', backgroundColor: '#3b82f6', color: 'white', flexShrink: 0 }}>G</div>
+						{!collapsed && <span style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '-0.025em', color: 'white', whiteSpace: 'nowrap' }}>GoDo Scheduler</span>}
+					</div>
 
-      {/* Mobile Drawer */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-30 md:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
-          <div className="fixed inset-y-0 right-0 w-64 bg-slate-900 text-white p-6 shadow-xl flex flex-col">
-            <div className="flex-1 space-y-4">
-               {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      onViewChange(item.id as ViewState);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg ${
-                      currentView === item.id ? 'bg-primary-600' : 'hover:bg-slate-800'
-                    }`}
-                  >
-                    <Icon size={20} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-                onClick={onLogout}
-                className="w-full flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-red-600 transition-colors"
-              >
-                <LogOut size={20} />
-                <span>Sign Out</span>
-            </button>
-          </div>
-        </div>
-      )}
+					{/* 2. 中间菜单 - 占据剩余空间 (flex: 1) */}
+					<div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+						<Menu theme="dark" selectedKeys={[currentView]} mode="inline" items={menuItems} style={{ borderRight: 0 }} />
+					</div>
 
-      {/* Main Content */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 pt-20 md:pt-8 min-h-screen">
-        <div className="max-w-6xl mx-auto h-full">
-          {children}
-        </div>
-      </main>
-    </div>
-  );
+					{/* 3. 底部 Footer - 被上面的 flex: 1 推到底部 */}
+					<SiderFooter collapsed={collapsed} username={username} onLogout={onLogout} />
+				</div>
+			</Sider>
+
+			<Layout style={{ marginLeft: collapsed ? 80 : 224, transition: 'all 0.2s' }}>
+				<Content style={{ margin: '5px', overflow: 'initial' }}>
+					<div
+						style={{
+							padding: 24,
+							minHeight: '100vh',
+							background: colorBgContainer,
+							borderRadius: borderRadiusLG,
+						}}
+					>
+						{children}
+					</div>
+				</Content>
+			</Layout>
+		</Layout>
+	);
 };
