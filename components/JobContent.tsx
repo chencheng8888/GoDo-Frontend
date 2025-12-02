@@ -1,5 +1,4 @@
-
-export const renderJobDetails = (jobStr: string) => {
+export const JobDetails = ({ jobStr }: { jobStr: string }) => {
 	let parsed: Record<string, any>;
 	try {
 		parsed = JSON.parse(jobStr);

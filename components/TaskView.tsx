@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Clock, Play, AlertCircle, RefreshCw, Key } from 'lucide-react';
+import { Plus, Trash2, Clock, Play, AlertCircle, RefreshCw, Eye } from 'lucide-react';
 import { TaskResponse, AddShellTaskRequest } from '../types';
 import { api } from '../services/api';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { renderJobDetails } from './showJobContent';
+import { JobDetails } from './JobContent';
 import CustomModal from './CustomModalProps';
 
-import { Tabs } from 'antd';
-import type { TabsProps } from 'antd';
+import { Tabs, TabsProps, Row, Col, Drawer } from 'antd';
 
+import { Card, Tag, Typography, Descriptions, Divider, Flex } from 'antd';
+import { ClockCircleOutlined, SettingOutlined, ProjectOutlined } from '@ant-design/icons';
 
-import { Row, Col } from 'antd';
+const { Title, Text } = Typography;
 
 interface TaskViewProps {
 	username: string;
@@ -22,6 +23,8 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [isDrawOpen, setIsDrawOpen] = useState(false);
+	// const [size, setSize] = useState(745);
 
 	// Form State
 	const [newTask, setNewTask] = useState<Partial<AddShellTaskRequest>>({
@@ -137,7 +140,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 			</form>
 		);
 	};
-	const createTaskTab: TabsProps['item'] = [
+	const createTaskTab: TabsProps['items'] = [
 		{
 			key: 'shell',
 			label: 'Shell Task',
@@ -145,7 +148,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 		},
 	];
 
-	const TaskList = ({ tasks, handleRun, runningTasks, handleDelete, renderJobDetails }) => {
+	const TaskList = ({ tasks, handleRun, runningTasks, handleDelete }) => {
 		return (
 			<Row gutter={[16, 16]} justify="start">
 				{tasks.map(task => (
@@ -154,6 +157,79 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 							<div className="flex justify-between items-start mb-4">
 								<div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">{task.job_type}</div>
 								<div className="flex space-x-1">
+									<Button variant="ghost" size="sm" onClick={() => setIsDrawOpen(true)}>
+										<Eye className="h-4 w-4 mr-1" /> Details
+									</Button>
+									<Drawer title="Task Detail" placement="right" onClose={() => setIsDrawOpen(false)} open={isDrawOpen} size={745}>
+										<Card
+											hoverable
+											className="task-card"
+											style={{ width: '100%', minHeight: 300 }}
+											// Card Title for Task Name and ID
+											title={
+												<Flex align="center" justify="space-between">
+													<Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+														<ProjectOutlined style={{ marginRight: 8 }} />
+														Task Name: {task.task_name}
+													</Title>
+													{/* Tag for TaskID */}
+													<Tag color="default">TaskID: {task.id}</Tag>
+												</Flex>
+											}
+											styles={{ body: { padding: '16px 24px' } }}
+										>
+											{/* Task Description Area */}
+											<div style={{ marginBottom: 16 }}>
+												<Text strong style={{ display: 'block', marginBottom: 8, color: '#595959' }}>
+													Description
+												</Text>
+												{/* Description Content Styling */}
+												<pre
+													style={{
+														backgroundColor: '#f9f9f9',
+														padding: 12,
+														borderRadius: 4,
+														border: '1px solid #e8e8e8',
+														fontSize: '12px',
+														fontFamily: 'Consolas, monospace',
+														whiteSpace: 'pre-wrap',
+														overflowX: 'auto',
+														minHeight: 100,
+														color: '#262626',
+													}}
+												>
+													{task.description || 'No description provided'}
+												</pre>
+											</div>
+
+											<Divider style={{ margin: '12px 0' }} />
+
+											{/* Footer Information */}
+											<Flex vertical gap={12}>
+												{/* Scheduled Time */}
+												<Flex align="center">
+													<ClockCircleOutlined style={{ color: '#faad14', marginRight: 8, fontSize: 16 }} />
+													<Text strong style={{ color: '#595959' }}>
+														Scheduled Time:
+													</Text>
+													<Tag color="default" style={{ marginLeft: 8 }} title={task.scheduled_time}>
+														{task.scheduled_time}
+													</Tag>
+												</Flex>
+
+												{/* Job Configuration */}
+												<div>
+													<Flex align="center" style={{ marginBottom: 8 }}>
+														<SettingOutlined style={{ color: '#52c41a', marginRight: 8, fontSize: 16 }} />
+														<Text strong style={{ color: '#595959', textTransform: 'uppercase' }}>
+															Job Configuration
+														</Text>
+													</Flex>
+													<JobDetails jobStr={task.job} />
+												</div>
+											</Flex>
+										</Card>
+									</Drawer>
 									<button onClick={() => handleRun(task.id)} className="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Run Task">
 										{runningTasks[task.id] ? <RefreshCw size={18} className="animate-spin" /> : <Play size={18} />}
 									</button>
@@ -178,16 +254,9 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 							<div className="mt-auto space-y-4 pt-4 border-t border-slate-100">
 								<div className="flex items-center text-sm text-slate-600">
 									<Clock className="mr-2 h-4 w-4 text-slate-400 shrink-0" />
-									<span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-xs truncate w-full" title={task.scheduled_time}>
+									<Tag color="default" style={{ marginLeft: 8 }} title={task.scheduled_time}>
 										{task.scheduled_time}
-									</span>
-								</div>
-								<div className="w-full">
-									<div className="flex items-center text-xs text-slate-500 mb-2">
-										<Play className="mr-1 h-3 w-3" />
-										<span className="font-semibold">Job Configuration</span>
-									</div>
-									{renderJobDetails(task.job)}
+									</Tag>
 								</div>
 							</div>
 						</div>
@@ -235,7 +304,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 					<p className="text-slate-500 mt-1">Get started by creating a new shell task.</p>
 				</div>
 			) : (
-				TaskList({ tasks, handleRun, runningTasks, handleDelete, renderJobDetails })
+				TaskList({ tasks, handleRun, runningTasks, handleDelete })
 			)}
 
 			{/* Create Task Modal */}

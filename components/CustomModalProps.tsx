@@ -4,7 +4,7 @@ import { Modal } from 'antd';
 interface CustomModalProps {
 	title: string;
 	trigger?: ReactNode; // 可以传 JSX
-	children: ReactNode;
+	children?: ReactNode;
 	onOk?: () => void;
 	onCancel?: () => void;
 	okText?: string;
@@ -28,7 +28,7 @@ const CustomModal: React.FC<CustomModalProps> = ({ title, trigger, children, onO
 	const renderTrigger = () => {
 		if (trigger && isValidElement(trigger)) {
 			// 自动给传入元素加上点击事件
-			return cloneElement(trigger, { onClick: handleOpen });
+			return cloneElement(trigger as React.ReactElement<any>, { onClick: handleOpen });
 		}
 		// 默认按钮
 		return <button onClick={handleOpen}>{trigger || 'Open Modal'}</button>;

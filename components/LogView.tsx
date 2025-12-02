@@ -1,81 +1,79 @@
-
 import React, { useEffect, useState } from 'react';
 import { RefreshCw, AlertCircle, Terminal, CheckCircle2, XCircle, Clock, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { api } from '../services/api';
 import { TaskLog } from '../types';
 import { Button } from './ui/Button';
-import { renderJobDetails } from './showJobContent';
-
+import { JobDetails } from './JobContent';
 
 interface LogViewProps {
-  username: string;
+	username: string;
 }
 
 export const LogView: React.FC<LogViewProps> = ({ username }) => {
-  const [logs, setLogs] = useState<TaskLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
-  const [total, setTotal] = useState(0);
-  
-  // Modal for details
-  const [selectedLog, setSelectedLog] = useState<TaskLog | null>(null);
+	const [logs, setLogs] = useState<TaskLog[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState('');
+	const [page, setPage] = useState(1);
+	const [pageSize] = useState(10);
+	const [total, setTotal] = useState(0);
 
-  const fetchLogs = async () => {
-    setLoading(true);
-    try {
-      const res = await api.getTaskLogs({
-        page,
-        page_size: pageSize,
-        user_name: username
-      });
-      setLogs(res.list || []);
-      setTotal(res.total || 0);
-      setError('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch logs');
-    } finally {
-      setLoading(false);
-    }
-  };
+	// Modal for details
+	const [selectedLog, setSelectedLog] = useState<TaskLog | null>(null);
 
-  useEffect(() => {
-    fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize]);
+	const fetchLogs = async () => {
+		setLoading(true);
+		try {
+			const res = await api.getTaskLogs({
+				page,
+				page_size: pageSize,
+				user_name: username,
+			});
+			setLogs(res.list || []);
+			setTotal(res.total || 0);
+			setError('');
+		} catch (err: any) {
+			setError(err.message || 'Failed to fetch logs');
+		} finally {
+			setLoading(false);
+		}
+	};
 
-  const totalPages = Math.ceil(total / pageSize);
+	useEffect(() => {
+		fetchLogs();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [page, pageSize]);
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr || dateStr.startsWith('0001-01-01')) return '-';
-    return new Date(dateStr).toLocaleString();
-  };
+	const totalPages = Math.ceil(total / pageSize);
 
-  const getStatus = (log: TaskLog) => {
-    // Logic: If there is ErrOutput, it's considered an error.
-    if (log.ErrOutput && log.ErrOutput.length > 0) return 'error';
-    // If we have an end time but no error output, it's a success
-    if (log.EndTime && !log.EndTime.startsWith('0001-01-01')) return 'success';
-    // Otherwise it is running
-    return 'running';
-  };
+	const formatDate = (dateStr: string) => {
+		if (!dateStr || dateStr.startsWith('0001-01-01')) return '-';
+		return new Date(dateStr).toLocaleString();
+	};
 
-  const parseContent = (contentStr: string) => {
-    try {
-      const parsed = JSON.parse(contentStr);
-      // Try to construct a readable command string
-      if (parsed.command) {
-        const args = Array.isArray(parsed.args) ? parsed.args.join(' ') : '';
-        return `${parsed.command} ${args}`.trim();
-      }
-      return contentStr;
-    } catch (e) {
-      return contentStr;
-    }
-  };
+	const getStatus = (log: TaskLog) => {
+		// Logic: If there is ErrOutput, it's considered an error.
+		if (log.ErrOutput && log.ErrOutput.length > 0) return 'error';
+		// If we have an end time but no error output, it's a success
+		if (log.EndTime && !log.EndTime.startsWith('0001-01-01')) return 'success';
+		// Otherwise it is running
+		return 'running';
+	};
 
-  return (
+	const parseContent = (contentStr: string) => {
+		try {
+			const parsed = JSON.parse(contentStr);
+			// Try to construct a readable command string
+			if (parsed.command) {
+				const args = Array.isArray(parsed.args) ? parsed.args.join(' ') : '';
+				return `${parsed.command} ${args}`.trim();
+			}
+			return contentStr;
+		} catch (e) {
+			return contentStr;
+		}
+	};
+
+	return (
 		<div>
 			<div className="flex justify-between items-center mb-8">
 				<div>
@@ -202,7 +200,8 @@ export const LogView: React.FC<LogViewProps> = ({ username }) => {
 								<h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
 									<Terminal className="h-4 w-4 mr-1" /> Command / Configuration
 								</h3>
-								{renderJobDetails(selectedLog.Content)}
+                                {/* {renderJobDetails(selectedLog.Content)} */}
+                                <JobDetails jobStr={selectedLog.Content}></JobDetails>
 							</div>
 
 							<div className="grid grid-cols-2 gap-4">
@@ -238,5 +237,5 @@ export const LogView: React.FC<LogViewProps> = ({ username }) => {
 				</div>
 			)}
 		</div>
-  );
+	);
 };
