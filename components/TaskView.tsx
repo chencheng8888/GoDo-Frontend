@@ -18,6 +18,9 @@ interface TaskViewProps {
 	username: string;
 }
 
+// LocalStorage key for caching new task form data
+const NEW_TASK_CACHE_KEY = 'new_task_form_cache';
+
 export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 	const [tasks, setTasks] = useState<TaskResponse[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -27,17 +30,50 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 	// const [size, setSize] = useState(745);
 
 	// Form State
-	const [newTask, setNewTask] = useState<Partial<AddShellTaskRequest>>({
-		task_name: '',
-		description: '',
-		command: '',
-		args: [],
-		scheduled_time: '0 * * * * *', // Default cron
-		timeout: 300,
-		use_shell: false,
+	const [newTask, setNewTask] = useState<Partial<AddShellTaskRequest>>(() => {
+		// Try to load cached data from localStorage on component mount
+		const cached = localStorage.getItem(NEW_TASK_CACHE_KEY);
+		if (cached) {
+			try {
+				return JSON.parse(cached);
+			} catch (e) {
+				console.error('Failed to parse cached task data:', e);
+			}
+		}
+		// Default values
+		return {
+			task_name: '',
+			description: '',
+			command: '',
+			args: [],
+			scheduled_time: '0 * * * * *', // Default cron
+			timeout: 300,
+			use_shell: false,
+		};
 	});
-	const [argInput, setArgInput] = useState('');
+	const [argInput, setArgInput] = useState(() => {
+		// Try to load cached argInput from localStorage
+		const cached = localStorage.getItem(NEW_TASK_CACHE_KEY);
+		if (cached) {
+			try {
+				const parsed = JSON.parse(cached);
+				return parsed.args?.join(' ') || '';
+			} catch (e) {
+				console.error('Failed to parse cached task data:', e);
+			}
+		}
+		return '';
+	});
 	const [submitting, setSubmitting] = useState(false);
+
+	// Save form data to localStorage whenever it changes
+	useEffect(() => {
+		const cacheData = {
+			...newTask,
+			args: argInput.length > 0 ? argInput.split(' ') : [],
+		};
+		localStorage.setItem(NEW_TASK_CACHE_KEY, JSON.stringify(cacheData));
+	}, [newTask, argInput]);
 
 	const fetchTasks = async () => {
 		setLoading(true);
@@ -90,6 +126,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 				args: argInput.length > 0 ? argInput.split(' ') : [],
 			});
 			setIsModalOpen(false);
+			// Clear form and localStorage cache on successful submission
 			setNewTask({
 				task_name: '',
 				description: '',
@@ -100,6 +137,7 @@ export const TaskView: React.FC<TaskViewProps> = ({ username }) => {
 				use_shell: true,
 			});
 			setArgInput('');
+			localStorage.removeItem(NEW_TASK_CACHE_KEY);
 			fetchTasks();
 		} catch (err: any) {
 			alert(err.message);
